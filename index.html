@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XKing Studios — Shockbyte Banner Generator (SVG &amp; PNG)</title>
+  <style>
+    * { box-sizing: border-box; font-family: "Segoe UI", system-ui, sans-serif; }
+    body {
+      margin: 0; padding: 24px; background: #0f172a; color: #e2e8f0;
+      display: flex; flex-direction: column; align-items: center; gap: 20px;
+    }
+    h1 { margin: 0; font-size: 20px; color: #38bdf8; letter-spacing: 0.5px; }
+    .sub { margin: 4px 0 0; font-size: 13px; color: #94a3b8; }
+    .wrap {
+      width: 100%; max-width: 1240px; display: grid;
+      grid-template-columns: 360px 1fr; gap: 20px; align-items: start;
+    }
+    @media (max-width: 960px) { .wrap { grid-template-columns: 1fr; } }
+    .panel {
+      background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+      padding: 16px; display: flex; flex-direction: column; gap: 12px;
+    }
+    label { font-size: 12px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px; }
+    input[type="text"], select, input[type="file"] {
+      width: 100%; padding: 8px 10px; border-radius: 6px;
+      border: 1px solid #475569; background: #0f172a; color: #f8fafc; font-size: 13px;
+    }
+    input[type="range"] { width: 100%; accent-color: #22c55e; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+    button {
+      flex: 1; padding: 11px 14px; border: none; border-radius: 8px;
+      font-weight: 700; font-size: 13px; cursor: pointer; transition: 0.15s;
+    }
+    .btn-png { background: #22c55e; color: #052e16; }
+    .btn-png:hover { background: #4ade80; }
+    .btn-svg { background: #38bdf8; color: #082f49; }
+    .btn-svg:hover { background: #7dd3fc; }
+    .preview-box {
+      background: #020617; border: 1px solid #334155; border-radius: 12px;
+      padding: 16px; display: flex; flex-direction: column; gap: 12px; align-items: center;
+    }
+    canvas {
+      max-width: 100%; height: auto; border: 2px solid #475569;
+      border-radius: 6px; background: #1e293b;
+    }
+    .hint { font-size: 12px; color: #94a3b8; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div style="text-align:center;">
+    <h1>XKING STUDIOS — SHOCKBYTE BANNER GENERATOR</h1>
+    <p class="sub">100% Offline • Instant High-Res PNG &amp; SVG Export • Minecraft UI Style</p>
+  </div>
+
+  <div class="wrap">
+    <div class="panel">
+      <div>
+        <label>1. Upload Park Screenshot (Foto 1) *</label>
+        <input type="file" id="bgFile" accept="image/*" />
+      </div>
+
+      <div>
+        <label>2. Upload Official Shockbyte Logo PNG/SVG (Optional)</label>
+        <input type="file" id="logoFile" accept="image/*,.svg" />
+      </div>
+
+      <div>
+        <label>3. Upload Minecraft Font .ttf / .otf (Optional)</label>
+        <input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2" />
+      </div>
+
+      <div>
+        <label>Banner Size Preset</label>
+        <select id="sizePreset">
+          <option value="1200x350">1200 x 350 px (CurseForge / Web Banner)</option>
+          <option value="1280x720">1280 x 720 px (Ko-Fi / Patreon / Discord 16:9)</option>
+        </select>
+      </div>
+
+      <div class="row2">
+        <div>
+          <label>Photo Focus X (%)</label>
+          <input type="range" id="cropX" min="0" max="100" value="20" />
+        </div>
+        <div>
+          <label>Photo Focus Y (%)</label>
+          <input type="range" id="cropY" min="0" max="100" value="45" />
+        </div>
+      </div>
+
+      <div>
+        <label>Top Tagline</label>
+        <input type="text" id="tagText" value="OFFICIAL SERVER PARTNER" />
+      </div>
+
+      <div>
+        <label>Main Headline</label>
+        <input type="text" id="headText" value="PLAY XKING CITY WITH FRIENDS!" />
+      </div>
+
+      <div>
+        <label>Promo Highlight</label>
+        <input type="text" id="promoText" value="GET 25% OFF YOUR FIRST MONTH" />
+      </div>
+
+      <div>
+        <label>Button Text (Your Real Shockbyte Code)</label>
+        <input type="text" id="codeText" value="USE CODE: YOURCODE" />
+      </div>
+
+      <div>
+        <label>Bottom Compatibility Line</label>
+        <input type="text" id="footText" value="Forge 1.20.1 • NeoForge 1.21.1 • Terraria Ready" />
+      </div>
+
+      <div>
+        <label>Right Panel Darkness</label>
+        <input type="range" id="shadeAlpha" min="30" max="92" value="72" />
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-png" id="dlPng">DOWNLOAD PNG</button>
+        <button class="btn-svg" id="dlSvg">DOWNLOAD SVG</button>
+      </div>
+    </div>
+
+    <div class="preview-box">
+      <canvas id="bannerCanvas" width="1200" height="350"></canvas>
+      <p class="hint">
+        Tips: Upload your bright Park screenshot first! Adjust <b>Photo Focus X/Y</b> so the glass skyscraper &amp; tulip path stay clean on the left while the text panel sits nicely on the right.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("bannerCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const state = {
+      bgImg: null,
+      bgDataUrl: "",
+      logoImg: null,
+      logoDataUrl: "",
+      customFontLoaded: false,
+      fontFamily: 'Impact, "Arial Black", "Segoe UI Black", sans-serif'
+    };
+
+    const el = (id) => document.getElementById(id);
+    const controls = ["sizePreset", "cropX", "cropY", "tagText", "headText", "promoText", "codeText", "footText", "shadeAlpha"];
+    controls.forEach(id => el(id).addEventListener("input", render));
+
+    function loadImageFile(inputEl, keyImg, keyUrl) {
+      inputEl.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          state[keyUrl] = reader.result;
+          const img = new Image();
+          img.onload = () => {
+            state[keyImg] = img;
+            render();
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    loadImageFile(el("bgFile"), "bgImg", "bgDataUrl");
+    loadImageFile(el("logoFile"), "logoImg", "logoDataUrl");
+
+    el("fontFile").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const buf = await file.arrayBuffer();
+      const font = new FontFace("UserMinecraftFont", buf);
+      await font.load();
+      document.fonts.add(font);
+      state.customFontLoaded = true;
+      state.fontFamily = '"UserMinecraftFont", Impact, sans-serif';
+      render();
+    });
+
+    function getDims() {
+      const [w, h] = el("sizePreset").value.split("x").map(Number);
+      return { w, h };
+    }
+
+    function drawCover(img, w, h, fx, fy) {
+      const ir = img.width / img.height;
+      const cr = w / h;
+      let dw, dh, dx, dy;
+      if (ir > cr) {
+        dh = h; dw = h * ir;
+        dx = (w - dw) * (fx / 100);
+        dy = 0;
+      } else {
+        dw = w; dh = w / ir;
+        dx = 0;
+        dy = (h - dh) * (fy / 100);
+      }
+      ctx.drawImage(img, dx, dy, dw, dh);
+    }
+
+    function drawMinecraftText(text, x, y, size, mainColor, shadowColor, align = "left", maxWidth = 600) {
+      ctx.save();
+      ctx.font = `900 ${size}px ${state.fontFamily}`;
+      ctx.textAlign = align;
+      ctx.textBaseline = "middle";
+      const offset = Math.max(2, Math.round(size * 0.1));
+
+      // Hard stepped 3D pixel shadow
+      ctx.lineWidth = Math.max(3, Math.round(size * 0.14));
+      ctx.strokeStyle = "#090d16";
+      ctx.lineJoin = "round";
+      ctx.strokeText(text, x + offset, y + offset, maxWidth);
+
+      ctx.fillStyle = shadowColor;
+      ctx.fillText(text, x + offset, y + offset, maxWidth);
+
+      ctx.strokeStyle = "#0b1120";
+      ctx.strokeText(text, x, y, maxWidth);
+
+      ctx.fillStyle = mainColor;
+      ctx.fillText(text, x, y, maxWidth);
+      ctx.restore();
+    }
+
+    function drawPixelButton(x, y, w, h, label, fontSize) {
+      ctx.save();
+      // Outer black border
+      ctx.fillStyle = "#070b12";
+      ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
+
+      // Emerald Minecraft button face
+      const grad = ctx.createLinearGradient(x, y, x, y + h);
+      grad.addColorStop(0, "#46b938");
+      grad.addColorStop(1, "#2d8623");
+      ctx.fillStyle = grad;
+      ctx.fillRect(x, y, w, h);
+
+      // Top & left bright bevel
+      ctx.fillStyle = "#88f078";
+      ctx.fillRect(x, y, w, 4);
+      ctx.fillRect(x, y, 4, h);
+
+      // Bottom & right dark bevel
+      ctx.fillStyle = "#164d10";
+      ctx.fillRect(x, y + h - 4, w, 4);
+      ctx.fillRect(x + w - 4, y, 4, h);
+
+      drawMinecraftText(label, x + w / 2, y + h / 2 + 1, fontSize, "#ffffff", "#113b0c", "center", w - 24);
+      ctx.restore();
+    }
+
+    function drawFallbackShockbyteBadge(x, y, h) {
+      ctx.save();
+      // Cyan rounded-pixel bolt emblem + SHOCKBYTE text
+      const box = h;
+      ctx.fillStyle = "#0b1324";
+      ctx.fillRect(x - 2, y - 2, box + 4, box + 4);
+      const g = ctx.createLinearGradient(x, y, x + box, y + box);
+      g.addColorStop(0, "#38bdf8");
+      g.addColorStop(1, "#0284c7");
+      ctx.fillStyle = g;
+      ctx.fillRect(x, y, box, box);
+
+      // Lightning bolt
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.moveTo(x + box * 0.56, y + box * 0.14);
+      ctx.lineTo(x + box * 0.24, y + box * 0.54);
+      ctx.lineTo(x + box * 0.48, y + box * 0.54);
+      ctx.lineTo(x + box * 0.40, y + box * 0.86);
+      ctx.lineTo(x + box * 0.76, y + box * 0.44);
+      ctx.lineTo(x + box * 0.52, y + box * 0.44);
+      ctx.closePath();
+      ctx.fill();
+
+      drawMinecraftText("SHOCKBYTE", x + box + 12, y + box * 0.52, Math.round(h * 0.72), "#38bdf8", "#082f49", "left", 300);
+      ctx.restore();
+    }
+
+    function render() {
+      const { w, h } = getDims();
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+
+      const isWide = h <= 400;
+      const fx = Number(el("cropX").value);
+      const fy = Number(el("cropY").value);
+      const alpha = Number(el("shadeAlpha").value) / 100;
+
+      // 1. Background photo or placeholder sky
+      if (state.bgImg) {
+        drawCover(state.bgImg, w, h, fx, fy);
+      } else {
+        const sky = ctx.createLinearGradient(0, 0, w, h);
+        sky.addColorStop(0, "#38bdf8");
+        sky.addColorStop(0.55, "#7dd3fc");
+        sky.addColorStop(1, "#4ade80");
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = "rgba(15,23,42,0.55)";
+        ctx.font = "700 22px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("UPLOAD FOTO 1 (PARK SCREENSHOT) ON THE LEFT PANEL", w * 0.28, h * 0.5);
+      }
+
+      // 2. Smooth dark-slate gradient overlay on the right for crisp readability
+      const grad = ctx.createLinearGradient(w * 0.28, 0, w * 0.92, 0);
+      grad.addColorStop(0, "rgba(10, 15, 28, 0.0)");
+      grad.addColorStop(0.35, `rgba(10, 15, 28, ${(alpha * 0.75).toFixed(2)})`);
+      grad.addColorStop(1, `rgba(10, 15, 28, ${Math.min(0.95, alpha + 0.12).toFixed(2)})`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      // 3. Minecraft-style dark glass card on the right half
+      const cardX = isWide ? Math.round(w * 0.45) : Math.round(w * 0.40);
+      const cardY = isWide ? 22 : 48;
+      const cardW = w - cardX - (isWide ? 24 : 44);
+      const cardH = h - cardY * 2;
+
+      ctx.fillStyle = `rgba(15, 23, 42, ${(alpha * 0.85).toFixed(2)})`;
+      ctx.fillRect(cardX, cardY, cardW, cardH);
+
+      // Pixel frame border around card
+      ctx.strokeStyle = "#090d16";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(cardX, cardY, cardW, cardH);
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.45)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(cardX + 3, cardY + 3, cardW - 6, cardH - 6);
+
+      // 4. Logo + Content inside card
+      const pad = isWide ? 24 : 36;
+      const innerX = cardX + pad;
+      const innerW = cardW - pad * 2;
+
+      const logoH = isWide ? 40 : 62;
+      if (state.logoImg) {
+        const lw = (state.logoImg.width / state.logoImg.height) * logoH;
+        ctx.drawImage(state.logoImg, innerX, cardY + pad - 2, Math.min(lw, innerW * 0.55), logoH);
+      } else {
+        drawFallbackShockbyteBadge(innerX, cardY + pad, logoH);
+      }
+
+      // Top tagline pill on top-right of card
+      const tag = el("tagText").value.trim().toUpperCase();
+      if (tag) {
+        const tagSize = isWide ? 13 : 18;
+        ctx.save();
+        ctx.font = `800 ${tagSize}px sans-serif`;
+        const tw = ctx.measureText(tag).width + 20;
+        const tx = cardX + cardW - pad - tw;
+        const ty = cardY + pad + (isWide ? 6 : 12);
+        ctx.fillStyle = "rgba(56, 189, 248, 0.18)";
+        ctx.fillRect(tx, ty, tw, tagSize + 14);
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(tx, ty, tw, tagSize + 14);
+        ctx.fillStyle = "#7dd3fc";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(tag, tx + tw / 2, ty + (tagSize + 14) / 2 + 1);
+        ctx.restore();
+      }
+
+      // Main Headline
+      const head = el("headText").value.trim().toUpperCase();
+      drawMinecraftText(
+        head,
+        innerX,
+        cardY + (isWide ? 114 : 210),
+        isWide ? 33 : 48,
+        "#ffffff",
+        "#1e293b",
+        "left",
+        innerW
+      );
+
+      // Promo Highlight
+      const promo = el("promoText").value.trim().toUpperCase();
+      drawMinecraftText(
+        promo,
+        innerX,
+        cardY + (isWide ? 162 : 292),
+        isWide ? 24 : 36,
+        "#fde047",
+        "#713f12",
+        "left",
+        innerW
+      );
+
+      // Minecraft Emerald Button
+      const code = el("codeText").value.trim().toUpperCase();
+      const btnW = Math.min(innerW, isWide ? 360 : 520);
+      const btnH = isWide ? 54 : 84;
+      const btnY = cardY + (isWide ? 196 : 365);
+      drawPixelButton(innerX, btnY, btnW, btnH, code, isWide ? 24 : 34);
+
+      // Bottom Compatibility Line
+      const foot = el("footText").value.trim();
+      ctx.save();
+      ctx.font = `700 ${isWide ? 14 : 20}px sans-serif`;
+      ctx.fillStyle = "#cbd5e1";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(foot, innerX, cardY + cardH - (isWide ? 22 : 42), innerW);
+      ctx.restore();
+
+      // Subtle outer Minecraft border on entire banner
+      ctx.strokeStyle = "#090d16";
+      ctx.lineWidth = 6;
+      ctx.strokeRect(3, 3, w - 6, h - 6);
+    }
+
+    el("dlPng").addEventListener("click", () => {
+      render();
+      canvas.toBlob((blob) => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `shockbyte-banner-xking-${canvas.width}x${canvas.height}.png`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      }, "image/png");
+    });
+
+    el("dlSvg").addEventListener("click", () => {
+      render();
+      // Wraps crisp rendered banner cleanly as embedded SVG image + metadata so it opens anywhere
+      const pngData = canvas.toDataURL("image/png");
+      const { w, h } = getDims();
+      const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  <title>XKing Studios Shockbyte Affiliate Banner</title>
+  <image href="${pngData}" x="0" y="0" width="${w}" height="${h}" />
+</svg>`;
+      const blob = new Blob([svgContent], { type: "image/svg+xml;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `shockbyte-banner-xking-${w}x${h}.svg`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    });
+
+    render();
+  </script>
+</body>
+</html>
